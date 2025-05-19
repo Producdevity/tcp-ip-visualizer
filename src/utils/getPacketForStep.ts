@@ -8,7 +8,6 @@ export type PacketStep = {
   }
   from: 'client' | 'server'
   to: 'client' | 'server'
-  layers: boolean[]
   data?: string
 }
 
@@ -20,7 +19,6 @@ function getPacketForStep(step: number) {
       type: PACKET_TYPES.SYN,
       from: 'client',
       to: 'server',
-      layers: [true, true, true, true],
     },
     1: {
       // SYN-ACK
@@ -28,7 +26,6 @@ function getPacketForStep(step: number) {
       type: PACKET_TYPES.SYN_ACK,
       from: 'server',
       to: 'client',
-      layers: [true, true, true, true],
     },
     2: {
       // ACK
@@ -36,7 +33,6 @@ function getPacketForStep(step: number) {
       type: PACKET_TYPES.ACK,
       from: 'client',
       to: 'server',
-      layers: [true, true, true, true],
     },
     3: null, // DATA 1
     4: null, // DATA 2
@@ -49,7 +45,6 @@ function getPacketForStep(step: number) {
       type: PACKET_TYPES.DATA,
       from: step % 2 === 1 ? 'client' : 'server',
       to: step % 2 === 1 ? 'server' : 'client',
-      layers: [true, true, true, true],
       data: `Data Packet ${Math.floor(step / 2)}`,
     },
     9: {
@@ -58,7 +53,6 @@ function getPacketForStep(step: number) {
       type: PACKET_TYPES.FIN,
       from: 'client',
       to: 'server',
-      layers: [true, true, true, true],
     },
     10: {
       // ACK from server
@@ -66,7 +60,6 @@ function getPacketForStep(step: number) {
       type: PACKET_TYPES.ACK,
       from: 'server',
       to: 'client',
-      layers: [true, true, true, true],
     },
     11: {
       // FIN from server
@@ -74,7 +67,6 @@ function getPacketForStep(step: number) {
       type: PACKET_TYPES.FIN,
       from: 'server',
       to: 'client',
-      layers: [true, true, true, true],
     },
     12: {
       // ACK from client
@@ -82,7 +74,6 @@ function getPacketForStep(step: number) {
       type: PACKET_TYPES.ACK,
       from: 'client',
       to: 'server',
-      layers: [true, true, true, true],
     },
   }
 
