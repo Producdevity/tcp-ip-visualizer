@@ -5,6 +5,7 @@ export const TCP_IP_LAYER_NAMES = {
   transport: 'Transport',
   internet: 'Internet',
   network_interface: 'Network Interface',
+  transmission: 'Transmission',
 } as const
 
 export type TCPIPLayerName = ValueOf<typeof TCP_IP_LAYER_NAMES>
@@ -12,29 +13,29 @@ export type TCPIPLayerName = ValueOf<typeof TCP_IP_LAYER_NAMES>
 export type TCPIPLayer = {
   name: TCPIPLayerName
   color: string
-  action: string
+  header: string
 }
 
 export const TCP_IP_LAYERS: TCPIPLayer[] = [
   {
     name: TCP_IP_LAYER_NAMES.application,
     color: '#f97316',
-    action: 'Creates data',
+    header: 'HTTP/FTP Header',
   },
   {
     name: TCP_IP_LAYER_NAMES.transport,
     color: '#8b5cf6',
-    action: 'Adds TCP header',
+    header: 'TCP Header',
   },
   {
     name: TCP_IP_LAYER_NAMES.internet,
     color: '#06b6d4',
-    action: 'Adds IP header',
+    header: 'IP Header',
   },
   {
     name: TCP_IP_LAYER_NAMES.network_interface,
     color: '#22c55e',
-    action: 'Adds MAC header',
+    header: 'Ethernet Frame',
   },
 ]
 
