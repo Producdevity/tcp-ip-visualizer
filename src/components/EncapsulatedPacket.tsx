@@ -32,7 +32,7 @@ function EncapsulatedPacket(props: Props) {
       { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y }, // Transport
       { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y * 2 }, // Internet
       { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y * 3 }, // Network Interface
-      { x: TRANSMISSION_X, y: START_Y + STEP_Y * 4 }, // Transmission
+      { x: TRANSMISSION_X, y: START_Y + STEP_Y * 3 }, // Transmission
       { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 3 }, // Network Interface (receiver)
       { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 2 }, // Internet (receiver)
       { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 1 }, // Transport (receiver)
@@ -43,6 +43,10 @@ function EncapsulatedPacket(props: Props) {
   }, [props.stage, props.packet.from])
 
   const Icon = props.packet.type.icon
+  const isClientToServer = props.packet.from === 'client'
+  const isOnSenderSide = props.stage < 4
+  const alignRight = isClientToServer ? isOnSenderSide : !isOnSenderSide
+  const isOnTransmission = props.stage === 4
 
   return (
     <div
@@ -54,40 +58,48 @@ function EncapsulatedPacket(props: Props) {
         zIndex: 50,
       }}
     >
-      {/* Base packet (envelope) */}
       <div className="relative">
-        {/* Data payload (envelope) */}
-        <div className="w-16 h-12 mt-2 bg-white border-2 border-black rounded flex items-center justify-center">
-          <Icon className="w-8 h-8 text-black" />
+        <div className="w-16 h-12 mt-2 bg-white border-2 border-black rounded flex items-start justify-center">
+          <Icon className="mt-0.5 w-6 h-6 text-black" />
         </div>
 
-        {/* Layer headers (colored borders) */}
-        {visibleHeaders.map((layerIndex) => (
-          <div
-            key={`header-${layerIndex}`}
-            className="absolute inset-0 border-4 rounded"
-            style={{
-              borderColor: TCP_IP_LAYERS[layerIndex].color,
-              transform: `scale(${1 + (visibleHeaders.length - visibleHeaders.indexOf(layerIndex)) * 0.15})`,
-              zIndex: -layerIndex,
-            }}
-          >
-            {/* Header label */}
-            <div
-              className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-[8px] font-bold px-1 rounded"
-              style={{
-                backgroundColor: TCP_IP_LAYERS[layerIndex].color,
-                color: 'white',
-              }}
-            >
-              {TCP_IP_LAYERS[layerIndex].header}
+        {visibleHeaders.map((layerIndex, i) => {
+          const layer = TCP_IP_LAYERS[layerIndex]
+
+          const verticalSpacing = 20
+          const verticalOffset = i * verticalSpacing
+
+          return (
+            <div key={`header-${layerIndex}`}>
+              <div
+                className="absolute inset-0 border-4 rounded"
+                style={{
+                  borderColor: layer.color,
+                  transform: `scale(${1 + (visibleHeaders.length - i) * 0.12})`,
+                  zIndex: -layerIndex,
+                }}
+              />
+              {!isOnTransmission && (
+                <div
+                  className="absolute text-[8px] font-bold px-1 py-0.5 rounded whitespace-nowrap text-white text-center min-w-18"
+                  style={{
+                    top: `${verticalOffset}px`,
+                    left: alignRight ? '100%' : 'auto',
+                    right: alignRight ? 'auto' : '100%',
+                    transform: `translateX(${alignRight ? '16px' : '-16px'})`,
+                    backgroundColor: layer.color,
+                  }}
+                >
+                  {layer.header}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {/* Packet type label */}
         <div
-          className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm font-bold text-center px-1 rounded"
+          className="absolute bottom-1 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-center px-1 rounded"
           style={{ backgroundColor: props.packet.type.color, color: 'white' }}
         >
           {props.packet.type.name}
