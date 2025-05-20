@@ -15,6 +15,8 @@ const infoTextMap: Record<number, string | null> = {
   13: 'Step 14: Connection terminated',
 }
 
+export const TOTAL_STEPS = Object.keys(infoTextMap).length
+
 function getInfoText(step: number) {
   const infoText = infoTextMap[step]
 
