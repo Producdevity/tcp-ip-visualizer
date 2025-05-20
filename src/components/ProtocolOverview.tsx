@@ -145,18 +145,7 @@ function ProtocolOverview() {
                   <div>
                     <h4 className="font-medium">{packet.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {packet.name === 'SYN' &&
-                        'Synchronize: Initiates a connection'}
-                      {packet.name === 'SYN-ACK' &&
-                        'Synchronize-Acknowledge: Acknowledges SYN and sends SYN'}
-                      {packet.name === 'ACK' &&
-                        'Acknowledge: Confirms receipt of packets'}
-                      {packet.name === 'DATA' &&
-                        'Data: Contains actual information being transferred'}
-                      {packet.name === 'FIN' &&
-                        'Finish: Initiates connection termination'}
-                      {packet.name === 'FIN-ACK' &&
-                        'Finish-Acknowledge: Acknowledges FIN request'}
+                      {packet.description}
                     </p>
                   </div>
                 </div>
