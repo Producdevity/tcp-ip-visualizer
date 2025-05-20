@@ -10,24 +10,6 @@ export type PacketStep = {
 }
 
 function getPacketForStep(step: number) {
-  if (step === 3) {
-    console.log('step % 2 === 1', step % 2 === 1)
-  }
-  if (step === 4) {
-    console.log('step % 2 === 1', step % 2 === 1)
-  }
-  if (step === 5) {
-    console.log('step % 2 === 1', step % 2 === 1)
-  }
-  if (step === 6) {
-    console.log('step % 2 === 1', step % 2 === 1)
-  }
-  if (step === 7) {
-    console.log('step % 2 === 1', step % 2 === 1)
-  }
-  if (step === 8) {
-    console.log('step % 2 === 1', step % 2 === 1)
-  }
   const packetStepMap: Record<number, PacketStep | null> = {
     0: {
       id: `packet-${Date.now()}`,
