@@ -19,6 +19,7 @@ function EncapsulatedPacket(props: Props) {
   }, [props.stage])
 
   const currentPosition = useMemo(() => {
+    const fromClient = props.packet.from === 'client'
     const CLIENT_X = 20
     const SERVER_X = 80
     const TRANSMISSION_X = 50
@@ -27,19 +28,19 @@ function EncapsulatedPacket(props: Props) {
     const STEP_Y = SPACING * 20
 
     const positions = [
-      { x: CLIENT_X, y: START_Y }, // Application
-      { x: CLIENT_X, y: START_Y + STEP_Y }, // Transport
-      { x: CLIENT_X, y: START_Y + STEP_Y * 2 }, // Internet
-      { x: CLIENT_X, y: START_Y + STEP_Y * 3 }, // Network Interface
+      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y }, // Application
+      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y }, // Transport
+      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y * 2 }, // Internet
+      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y * 3 }, // Network Interface
       { x: TRANSMISSION_X, y: START_Y + STEP_Y * 4 }, // Transmission
-      { x: SERVER_X, y: START_Y + STEP_Y * 3 }, // Network Interface (receiver)
-      { x: SERVER_X, y: START_Y + STEP_Y * 2 }, // Internet (receiver)
-      { x: SERVER_X, y: START_Y + STEP_Y * 1 }, // Transport (receiver)
-      { x: SERVER_X, y: START_Y }, // Application (receiver)
+      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 3 }, // Network Interface (receiver)
+      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 2 }, // Internet (receiver)
+      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 1 }, // Transport (receiver)
+      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y }, // Application (receiver)
     ]
 
     return positions[props.stage]
-  }, [props.stage])
+  }, [props.stage, props.packet.from])
 
   const Icon = props.packet.type.icon
 
