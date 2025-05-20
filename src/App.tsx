@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-// import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   Info,
   Laptop,
@@ -13,15 +12,19 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { ANIMATION_STATES, TCP_IP_LAYERS } from './data'
 import getPacketForStep, { type PacketStep } from './utils/getPacketForStep'
-import getInfoText from './utils/getInfoText'
+import getInfoText, { TOTAL_STEPS } from './utils/getInfoText'
 import getLayoutInfoForStage from './utils/getLayerInfoForStage'
-import ProtocolOverview from './components/ProtocolOverview'
+import ProtocolOverview, { type Tab } from './components/ProtocolOverview'
 import EncapsulatedPacket from './components/EncapsulatedPacket'
+import ConnectionStatus from './components/ConnectionStatus'
+
+const BASE_DURATION = 4000
 
 function App() {
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [animationState, setAnimationState] = useState(ANIMATION_STATES.IDLE)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [speed, setSpeed] = useState(1)
+  const [speed, setSpeed] = useState(0.5)
   const [currentStep, setCurrentStep] = useState(0)
   const [packets, setPackets] = useState<PacketStep[]>([])
   const [layerInfo, setLayerInfo] = useState('')
@@ -30,11 +33,8 @@ function App() {
     'Click Play to start the TCP/IP visualization',
   )
 
-  console.log('currentPacketStage', currentPacketStage)
   const animationTimer = useRef<NodeJS.Timeout | null>(null)
-  const totalSteps = 14 // Total animation steps
-
-  // Clear any existing timers when component unmounts
+  // Clear any existing timers on unmount
   useEffect(() => {
     return () => {
       if (!animationTimer.current) return
@@ -45,13 +45,13 @@ function App() {
   // Start packet animation sequence
   const startPacketAnimation = useCallback(
     (packet: PacketStep) => {
-      const TOTAL_STAGES = 9 // Total animation stages
-      const STAGE_DURATION = 2000 / (speed * TOTAL_STAGES)
+      const TOTAL_STAGES = 9
+      const STAGE_DURATION = BASE_DURATION / (speed * TOTAL_STAGES)
 
       // Reset current stage
       setCurrentPacketStage(0)
 
-      // Function to advance to next stage
+      // Recursively advance through stages
       const advanceStage = (stage: number) => {
         if (stage >= TOTAL_STAGES) {
           // Animation complete, remove packet
@@ -74,17 +74,14 @@ function App() {
     [speed],
   )
 
-  // Create packet animation based on current step
   const createPacketForStep = useCallback(
     (step: number) => {
-      console.log('createPacketForStep', step)
       const newPacket = getPacketForStep(step)
 
       if (!newPacket) return
+
       setPackets((prev) => [...prev, newPacket])
       setCurrentPacketStage(0)
-
-      // Start the packet animation sequence
       startPacketAnimation(newPacket)
     },
     [startPacketAnimation],
@@ -94,16 +91,15 @@ function App() {
   useEffect(() => {
     if (!isPlaying) return
 
-    const stepDuration = 2000 / speed
+    const stepDuration = BASE_DURATION / speed
 
     const handleStep = () => {
-      if (currentStep >= totalSteps) {
+      if (currentStep >= TOTAL_STEPS) {
         setIsPlaying(false)
         setAnimationState(ANIMATION_STATES.COMPLETE)
         return
       }
 
-      // Update animation state based on current step
       if (currentStep < 3) {
         setAnimationState(ANIMATION_STATES.HANDSHAKE)
       } else if (currentStep < 10) {
@@ -117,36 +113,45 @@ function App() {
       setCurrentStep((prev) => prev + 1)
     }
 
-    animationTimer.current = setTimeout(handleStep, stepDuration)
+    animationTimer.current = setTimeout(
+      handleStep,
+      currentPacketStage === 0 ? stepDuration / 2 : stepDuration,
+    )
 
     return () => {
       if (!animationTimer.current) return
       clearTimeout(animationTimer.current)
     }
-  }, [isPlaying, currentStep, speed, createPacketForStep])
+  }, [isPlaying, currentStep, speed, currentPacketStage, createPacketForStep])
+
+  const activePacketType = useMemo(
+    () => (packets.length > 0 ? packets[packets.length - 1].type.name : null),
+    [packets],
+  )
 
   const togglePlay = () => {
-    if (currentStep >= totalSteps) return resetAnimation()
+    if (!isPlaying) setActiveTab('packets')
+
+    if (currentStep >= TOTAL_STEPS) return resetAnimation()
 
     setIsPlaying(!isPlaying)
   }
 
   const stepForward = () => {
-    if (currentStep < totalSteps) {
+    if (currentStep < TOTAL_STEPS) {
       setIsPlaying(false)
 
       // Update animation state based on next step
-      const nextStep = currentStep
-      if (nextStep < 3) {
+      if (currentStep < 3) {
         setAnimationState(ANIMATION_STATES.HANDSHAKE)
-      } else if (nextStep < 10) {
+      } else if (currentStep < 10) {
         setAnimationState(ANIMATION_STATES.DATA_TRANSFER)
       } else {
         setAnimationState(ANIMATION_STATES.TERMINATION)
       }
 
-      createPacketForStep(nextStep)
-      setInfoText(getInfoText(nextStep))
+      createPacketForStep(currentStep)
+      setInfoText(getInfoText(currentStep))
       setCurrentStep((prev) => prev + 1)
     }
   }
@@ -173,7 +178,11 @@ function App() {
           termination.
         </p>
         <div className="space-y-6">
-          <ProtocolOverview />
+          <ProtocolOverview
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            activePacketType={activePacketType}
+          />
 
           <div className="relative w-full h-[550px] border rounded-lg bg-background/50 overflow-hidden">
             {/* Client and Server */}
@@ -246,31 +255,7 @@ function App() {
               />
             ))}
 
-            {/* Connection Status */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-background/80 backdrop-blur-sm p-2 rounded-lg border shadow-sm">
-              <div className="flex items-center space-x-2">
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    animationState === ANIMATION_STATES.IDLE
-                      ? 'bg-yellow-500'
-                      : animationState === ANIMATION_STATES.COMPLETE
-                        ? 'bg-green-500'
-                        : 'bg-blue-500 animate-pulse'
-                  }`}
-                />
-                <span className="text-sm font-medium">
-                  {animationState === ANIMATION_STATES.IDLE && 'Ready'}
-                  {animationState === ANIMATION_STATES.HANDSHAKE &&
-                    'Establishing Connection'}
-                  {animationState === ANIMATION_STATES.DATA_TRANSFER &&
-                    'Transferring Data'}
-                  {animationState === ANIMATION_STATES.TERMINATION &&
-                    'Terminating Connection'}
-                  {animationState === ANIMATION_STATES.COMPLETE &&
-                    'Connection Closed'}
-                </span>
-              </div>
-            </div>
+            <ConnectionStatus animationState={animationState} />
           </div>
 
           {/* Info Panel */}
@@ -301,7 +286,7 @@ function App() {
                 variant="outline"
                 size="icon"
                 onClick={stepForward}
-                disabled={currentStep >= totalSteps}
+                disabled={currentStep >= TOTAL_STEPS}
                 aria-label="Step Forward"
               >
                 <SkipForward className="h-4 w-4" />
@@ -317,13 +302,15 @@ function App() {
               </Button>
             </div>
 
+            
+            {/* TODO: Fix speed change during animation */}
             <div className="flex items-center space-x-4 flex-1">
               <span className="text-sm">Speed:</span>
               <Slider
                 value={[speed]}
-                min={0.5}
-                max={3}
-                step={0.5}
+                min={0.1}
+                max={1}
+                step={0.1}
                 onValueChange={([newSpeed]) => setSpeed(newSpeed)}
                 className="w-full max-w-xs"
               />
@@ -332,7 +319,7 @@ function App() {
 
             <div className="flex items-center space-x-2">
               <span className="text-sm whitespace-nowrap">
-                Step: {currentStep}/{totalSteps}
+                Step: {currentStep}/{TOTAL_STEPS}
               </span>
             </div>
           </div>
