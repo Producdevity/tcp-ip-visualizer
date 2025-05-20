@@ -18,7 +18,7 @@ import ProtocolOverview, { type Tab } from './components/ProtocolOverview'
 import EncapsulatedPacket from './components/EncapsulatedPacket'
 import ConnectionStatus from './components/ConnectionStatus'
 
-const BASE_DURATION = 4000
+const BASE_DURATION = 3000
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
