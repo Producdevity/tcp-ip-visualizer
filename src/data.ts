@@ -1,11 +1,13 @@
+import type { LucideIcon } from 'lucide-react'
 import type { ValueOf } from './utils/types'
+import { Power, Check, CheckCircle, Package, Repeat, Send } from 'lucide-react'
 
 export const TCP_IP_LAYER_NAMES = {
   application: 'Application',
   transport: 'Transport',
   internet: 'Internet',
   network_interface: 'Network Interface',
-  transmission: 'Transmission',
+  transmission: 'Transmission', // Not a real layer, but used for animation purposes
 } as const
 
 export type TCPIPLayerName = ValueOf<typeof TCP_IP_LAYER_NAMES>
@@ -57,7 +59,9 @@ export const ANIMATION_STATES: AnimationStates = {
 
 export type PacketTypeDefinition<T> = {
   name: T
+  icon: LucideIcon
   color: string
+  description: string
 }
 
 export type PacketTypes = {
@@ -70,10 +74,40 @@ export type PacketTypes = {
 }
 
 export const PACKET_TYPES: PacketTypes = {
-  SYN: { name: 'SYN', color: '#f97316' },
-  SYN_ACK: { name: 'SYN-ACK', color: '#8b5cf6' },
-  ACK: { name: 'ACK', color: '#06b6d4' },
-  DATA: { name: 'DATA', color: '#22c55e' },
-  FIN: { name: 'FIN', color: '#ef4444' },
-  FIN_ACK: { name: 'FIN-ACK', color: '#f59e0b' },
+  SYN: {
+    name: 'SYN',
+    icon: Send,
+    color: '#f97316',
+    description: 'Synchronize: Initiates a connection',
+  },
+  SYN_ACK: {
+    name: 'SYN-ACK',
+    icon: Repeat,
+    color: '#8b5cf6',
+    description: 'Synchronize-Acknowledge: Acknowledges SYN and sends SYN',
+  },
+  ACK: {
+    name: 'ACK',
+    icon: Check,
+    color: '#06b6d4',
+    description: 'Acknowledge: Confirms receipt of packets',
+  },
+  DATA: {
+    name: 'DATA',
+    icon: Package,
+    color: '#22c55e',
+    description: 'Data: Contains actual information being transferred',
+  },
+  FIN: {
+    name: 'FIN',
+    icon: Power,
+    color: '#ef4444',
+    description: 'Finish: Initiates connection termination',
+  },
+  FIN_ACK: {
+    name: 'FIN-ACK',
+    icon: CheckCircle,
+    color: '#f59e0b',
+    description: 'Finish-Acknowledge: Acknowledges FIN request',
+  },
 }
