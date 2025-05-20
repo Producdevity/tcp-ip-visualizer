@@ -2,36 +2,12 @@ import { useMemo } from 'react'
 import { TCP_IP_LAYERS } from '@/data'
 import type { PacketStep } from '@/utils/getPacketForStep'
 
-const CLIENT_X = 20
-const SERVER_X = 80
-const TRANSMISSION_X = 50
-
-const STAGE_TO_X = [
-  CLIENT_X,
-  CLIENT_X,
-  CLIENT_X,
-  CLIENT_X,
-  TRANSMISSION_X,
-  SERVER_X,
-  SERVER_X,
-  SERVER_X,
-  SERVER_X,
-] as const
-
 interface Props {
   packet: PacketStep
   stage: number
 }
 
 function EncapsulatedPacket(props: Props) {
-  const currentPosition = useMemo(
-    () => ({
-      x: STAGE_TO_X[props.stage],
-      y: `calc(160px + ((var(--spacing) * 20) * ${props.stage}))`,
-    }),
-    [props.stage],
-  )
-
   const visibleHeaders = useMemo(() => {
     const visibleHeaders: number[] = []
 
@@ -40,6 +16,29 @@ function EncapsulatedPacket(props: Props) {
     if (props.stage >= 3 && props.stage <= 5) visibleHeaders.push(3) // Network Interface header
 
     return visibleHeaders
+  }, [props.stage])
+
+  const currentPosition = useMemo(() => {
+    const CLIENT_X = 20
+    const SERVER_X = 80
+    const TRANSMISSION_X = 50
+    const SPACING = 4
+    const START_Y = 160
+    const STEP_Y = SPACING * 20
+
+    const positions = [
+      { x: CLIENT_X, y: START_Y }, // Application
+      { x: CLIENT_X, y: START_Y + STEP_Y }, // Transport
+      { x: CLIENT_X, y: START_Y + STEP_Y * 2 }, // Internet
+      { x: CLIENT_X, y: START_Y + STEP_Y * 3 }, // Network Interface
+      { x: TRANSMISSION_X, y: START_Y + STEP_Y * 4 }, // Transmission
+      { x: SERVER_X, y: START_Y + STEP_Y * 3 }, // Network Interface (receiver)
+      { x: SERVER_X, y: START_Y + STEP_Y * 2 }, // Internet (receiver)
+      { x: SERVER_X, y: START_Y + STEP_Y * 1 }, // Transport (receiver)
+      { x: SERVER_X, y: START_Y }, // Application (receiver)
+    ]
+
+    return positions[props.stage]
   }, [props.stage])
 
   const Icon = props.packet.type.icon
