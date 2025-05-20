@@ -1,7 +1,22 @@
 import { useMemo } from 'react'
 import { TCP_IP_LAYERS } from '@/data'
-import { Mail } from 'lucide-react'
 import type { PacketStep } from '@/utils/getPacketForStep'
+
+const CLIENT_X = 20
+const SERVER_X = 80
+const TRANSMISSION_X = 50
+
+const STAGE_TO_X = [
+  CLIENT_X,
+  CLIENT_X,
+  CLIENT_X,
+  CLIENT_X,
+  TRANSMISSION_X,
+  SERVER_X,
+  SERVER_X,
+  SERVER_X,
+  SERVER_X,
+] as const
 
 interface Props {
   packet: PacketStep
@@ -9,6 +24,14 @@ interface Props {
 }
 
 function EncapsulatedPacket(props: Props) {
+  const currentPosition = useMemo(
+    () => ({
+      x: STAGE_TO_X[props.stage],
+      y: `calc(160px + ((var(--spacing) * 20) * ${props.stage}))`,
+    }),
+    [props.stage],
+  )
+
   const visibleHeaders = useMemo(() => {
     const visibleHeaders: number[] = []
 
@@ -19,32 +42,7 @@ function EncapsulatedPacket(props: Props) {
     return visibleHeaders
   }, [props.stage])
 
-  const currentPosition = useMemo(() => {
-    const isClientToServer = props.packet.from === 'client'
-    const clientX = 16
-    const serverX = 84
-
-    // Calculate positions for each stage
-    const positions = [
-      { x: isClientToServer ? clientX : serverX, y: 160 }, // Application
-      { x: isClientToServer ? clientX : serverX, y: 260 }, // Transport
-      { x: isClientToServer ? clientX : serverX, y: 360 }, // Internet
-      { x: isClientToServer ? clientX : serverX, y: 460 }, // Network Interface
-      {
-        x: isClientToServer ? (clientX + serverX) / 2 : (serverX + clientX) / 2,
-        y: 500,
-      }, // Transmission
-      { x: isClientToServer ? serverX : clientX, y: 460 }, // Network Interface (receiver)
-      { x: isClientToServer ? serverX : clientX, y: 360 }, // Internet (receiver)
-      { x: isClientToServer ? serverX : clientX, y: 260 }, // Transport (receiver)
-      { x: isClientToServer ? serverX : clientX, y: 160 }, // Application (receiver)
-    ]
-
-    // Get position for current stage
-    const position = positions[props.stage]
-
-    return position
-  }, [props.stage, props.packet.from])
+  const Icon = props.packet.type.icon
 
   return (
     <div
@@ -59,8 +57,8 @@ function EncapsulatedPacket(props: Props) {
       {/* Base packet (envelope) */}
       <div className="relative">
         {/* Data payload (envelope) */}
-        <div className="w-16 h-12 bg-white border-2 border-black rounded flex items-center justify-center">
-          <Mail className="w-8 h-8 text-black" />
+        <div className="w-16 h-12 mt-2 bg-white border-2 border-black rounded flex items-center justify-center">
+          <Icon className="w-8 h-8 text-black" />
         </div>
 
         {/* Layer headers (colored borders) */}
@@ -89,7 +87,7 @@ function EncapsulatedPacket(props: Props) {
 
         {/* Packet type label */}
         <div
-          className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 text-[10px] font-bold px-1 rounded"
+          className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm font-bold text-center px-1 rounded"
           style={{ backgroundColor: props.packet.type.color, color: 'white' }}
         >
           {props.packet.type.name}
