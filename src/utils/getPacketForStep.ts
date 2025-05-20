@@ -1,75 +1,116 @@
-import { PACKET_TYPES } from '@/data'
+import { PACKET_TYPES, type PacketTypes } from '@/data'
+import type { ValueOf } from './types'
 
 export type PacketStep = {
   id: string
-  type: {
-    name: string
-    color: string
-  }
+  type: ValueOf<PacketTypes>
   from: 'client' | 'server'
   to: 'client' | 'server'
   data?: string
 }
 
 function getPacketForStep(step: number) {
+  if (step === 3) {
+    console.log('step % 2 === 1', step % 2 === 1)
+  }
+  if (step === 4) {
+    console.log('step % 2 === 1', step % 2 === 1)
+  }
+  if (step === 5) {
+    console.log('step % 2 === 1', step % 2 === 1)
+  }
+  if (step === 6) {
+    console.log('step % 2 === 1', step % 2 === 1)
+  }
+  if (step === 7) {
+    console.log('step % 2 === 1', step % 2 === 1)
+  }
+  if (step === 8) {
+    console.log('step % 2 === 1', step % 2 === 1)
+  }
   const packetStepMap: Record<number, PacketStep | null> = {
     0: {
-      // SYN
       id: `packet-${Date.now()}`,
       type: PACKET_TYPES.SYN,
       from: 'client',
       to: 'server',
     },
     1: {
-      // SYN-ACK
       id: `packet-${Date.now()}`,
       type: PACKET_TYPES.SYN_ACK,
       from: 'server',
       to: 'client',
     },
     2: {
-      // ACK
       id: `packet-${Date.now()}`,
       type: PACKET_TYPES.ACK,
       from: 'client',
       to: 'server',
     },
-    3: null, // DATA 1
-    4: null, // DATA 2
-    5: null, // DATA 3
-    6: null, // DATA 4
-    7: null, // DATA 5
-    8: {
-      // DATA 6
+    3: {
       id: `packet-${Date.now()}`,
       type: PACKET_TYPES.DATA,
       from: step % 2 === 1 ? 'client' : 'server',
       to: step % 2 === 1 ? 'server' : 'client',
-      data: `Data Packet ${Math.floor(step / 2)}`,
+      data: 'Data Packer 1',
+    },
+    4: {
+      id: `packet-${Date.now()}`,
+      type: PACKET_TYPES.DATA,
+      from: step % 2 === 1 ? 'client' : 'server',
+      to: step % 2 === 1 ? 'server' : 'client',
+      data: 'Data Packer 2',
+    },
+
+    5: {
+      id: `packet-${Date.now()}`,
+      type: PACKET_TYPES.DATA,
+      from: step % 2 === 1 ? 'client' : 'server',
+      to: step % 2 === 1 ? 'server' : 'client',
+      data: 'Data Packer 3',
+    },
+
+    6: {
+      id: `packet-${Date.now()}`,
+      type: PACKET_TYPES.DATA,
+      from: step % 2 === 1 ? 'client' : 'server',
+      to: step % 2 === 1 ? 'server' : 'client',
+      data: 'Data Packer 4',
+    },
+
+    7: {
+      id: `packet-${Date.now()}`,
+      type: PACKET_TYPES.DATA,
+      from: step % 2 === 1 ? 'client' : 'server',
+      to: step % 2 === 1 ? 'server' : 'client',
+      data: 'Data Packer 5',
+    },
+    8: {
+      id: `packet-${Date.now()}`,
+      type: PACKET_TYPES.DATA,
+      from: step % 2 === 1 ? 'client' : 'server',
+      to: step % 2 === 1 ? 'server' : 'client',
+      data: 'Data Packer 5',
     },
     9: {
-      // FIN from client
       id: `packet-${Date.now()}`,
       type: PACKET_TYPES.FIN,
       from: 'client',
       to: 'server',
     },
     10: {
-      // ACK from server
       id: `packet-${Date.now()}`,
       type: PACKET_TYPES.ACK,
       from: 'server',
       to: 'client',
     },
     11: {
-      // FIN from server
       id: `packet-${Date.now()}`,
       type: PACKET_TYPES.FIN,
       from: 'server',
       to: 'client',
     },
     12: {
-      // ACK from client
       id: `packet-${Date.now()}`,
       type: PACKET_TYPES.ACK,
       from: 'client',
