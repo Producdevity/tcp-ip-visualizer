@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Card,
@@ -7,9 +6,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { TCP_IP_LAYERS, PACKET_TYPES } from '@/data'
+import { TCP_IP_LAYERS, PACKET_TYPES, type PacketTypes } from '@/data'
+import type { ValueOf } from '@/utils/types'
 
-type Tab = 'overview' | 'layers' | 'packets'
+export type Tab = 'overview' | 'layers' | 'packets'
 
 type TabOption = {
   value: Tab
@@ -24,13 +24,17 @@ const TABS: TabOption[] = [
 
 const [overviewTab, layersTab, packetsTab] = TABS
 
-function ProtocolOverview() {
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
+interface Props {
+  activeTab: Tab
+  setActiveTab: (tab: Tab) => void
+  activePacketType: ValueOf<PacketTypes>['name'] | null
+}
 
+function ProtocolOverview(props: Props) {
   return (
     <Tabs
-      value={activeTab}
-      onValueChange={(value) => setActiveTab(value as Tab)}
+      value={props.activeTab}
+      onValueChange={(value) => props.setActiveTab(value as Tab)}
       className="w-full"
     >
       <TabsList className="grid w-full grid-cols-3">
@@ -139,7 +143,7 @@ function ProtocolOverview() {
               {Object.values(PACKET_TYPES).map((packet) => (
                 <div key={packet.name} className="flex items-center space-x-3">
                   <div
-                    className="w-6 h-6 rounded"
+                    className={`w-6 h-6 rounded ${props.activePacketType === packet.name ? 'animate-pulse animate-bounce' : ''}`}
                     style={{ backgroundColor: packet.color }}
                   />
                   <div>
