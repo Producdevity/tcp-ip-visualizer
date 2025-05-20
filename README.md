@@ -12,6 +12,10 @@ This is a simple web application made for educational purposes that visualizes t
 
 The application was made to help me get a better understanding of how how the TCP/IP protocol works in a fun and engaging way.
 
+### Resources Used
+
+If you want to learn more about the TCP/IP protocol, I recommend checking out the [TCP/IP protocols documentation](https://www.ibm.com/docs/en/aix/7.2.0?topic=protocol-tcpip-protocols) from IBM. It provides a comprehensive overview of the TCP/IP protocol suite, including its architecture, protocols, and applications.
+
 ### Technologies Used
 
 - React
