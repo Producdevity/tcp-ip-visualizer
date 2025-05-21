@@ -13,6 +13,10 @@ interface Props {
 
 const TOTAL_STAGES = 9
 const BASE_DURATION = 0.5 // Base duration for each stage
+const HEADER_FADE_BASE_DURATION = 0.25
+const HEADER_FADE_IN_BASE_DELAY = 0.5
+const HEADER_FADE_OUT_BASE_DELAY = 0.25
+export const DEFAULT_SPEED = 0.5
 
 function EncapsulatedPacket(props: Props) {
   const { onComplete, onStageChange } = props
@@ -22,8 +26,8 @@ function EncapsulatedPacket(props: Props) {
 
   const positions = useMemo(() => {
     const fromClient = props.packet.from === 'client'
-    const CLIENT_X = 20
-    const SERVER_X = 80
+    const CLIENT_X = 21
+    const SERVER_X = 79
     const TRANSMISSION_X = 50
     const SPACING = 4
     const START_Y = 160
@@ -123,7 +127,12 @@ function EncapsulatedPacket(props: Props) {
                 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: headerVisible ? 1 : 0 }}
-                transition={{ duration: 0.25, delay: headerVisible ? 0.5 : 0 }}
+                transition={{
+                  duration: HEADER_FADE_BASE_DURATION * (DEFAULT_SPEED / props.speed),
+                  delay: headerVisible
+                    ? HEADER_FADE_IN_BASE_DELAY * (DEFAULT_SPEED / props.speed)
+                    : HEADER_FADE_OUT_BASE_DELAY * (DEFAULT_SPEED / props.speed),
+                }}
               />
               {!isOnTransmission && (
                 <motion.div
@@ -138,8 +147,10 @@ function EncapsulatedPacket(props: Props) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: headerVisible ? 1 : 0 }}
                   transition={{
-                    duration: 0.25,
-                    delay: headerVisible ? 0.5 : 0,
+                    duration: HEADER_FADE_BASE_DURATION * (DEFAULT_SPEED / props.speed),
+                    delay: headerVisible
+                      ? HEADER_FADE_IN_BASE_DELAY * (DEFAULT_SPEED / props.speed)
+                      : HEADER_FADE_OUT_BASE_DELAY * (DEFAULT_SPEED / props.speed),
                   }}
                 >
                   {layer.header}
