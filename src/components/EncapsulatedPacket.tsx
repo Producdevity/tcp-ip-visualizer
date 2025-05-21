@@ -118,7 +118,7 @@ function EncapsulatedPacket(props: Props) {
                 className="absolute inset-0 border-4 rounded"
                 style={{
                   borderColor: layer.color,
-                  transform: `scale(${1 + (3 - i) * 0.12})`,
+                  transform: `scale(${1.15 + (layerIndex - 1) * 0.15})`,
                   zIndex: -layerIndex,
                 }}
                 initial={{ opacity: 0 }}
