@@ -1,24 +1,25 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion, useAnimation } from 'framer-motion'
 import { TCP_IP_LAYERS } from '@/data'
 import type { PacketStep } from '@/utils/getPacketForStep'
 
 interface Props {
   packet: PacketStep
-  stage: number
+  isPlaying: boolean
+  speed: number
+  onStageChange?: (stage: number) => void
+  onComplete?: () => void
 }
 
+const TOTAL_STAGES = 9
+
 function EncapsulatedPacket(props: Props) {
-  const visibleHeaders = useMemo(() => {
-    const visibleHeaders: number[] = []
+  const { onComplete, onStageChange } = props
+  const controls = useAnimation()
+  const [stage, setStage] = useState(0)
+  const stageRef = useRef(0)
 
-    if (props.stage >= 1 && props.stage <= 7) visibleHeaders.push(1) // Transport header
-    if (props.stage >= 2 && props.stage <= 6) visibleHeaders.push(2) // Internet header
-    if (props.stage >= 3 && props.stage <= 5) visibleHeaders.push(3) // Network Interface header
-
-    return visibleHeaders
-  }, [props.stage])
-
-  const currentPosition = useMemo(() => {
+  const positions = useMemo(() => {
     const fromClient = props.packet.from === 'client'
     const CLIENT_X = 20
     const SERVER_X = 80
@@ -26,49 +27,91 @@ function EncapsulatedPacket(props: Props) {
     const SPACING = 4
     const START_Y = 160
     const STEP_Y = SPACING * 20
-
-    const positions = [
-      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y }, // Application
-      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y }, // Transport
-      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y * 2 }, // Internet
-      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y * 3 }, // Network Interface
-      { x: TRANSMISSION_X, y: START_Y + STEP_Y * 3 }, // Transmission
-      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 3 }, // Network Interface (receiver)
-      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 2 }, // Internet (receiver)
-      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 1 }, // Transport (receiver)
-      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y }, // Application (receiver)
+    return [
+      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y },
+      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y },
+      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y * 2 },
+      { x: fromClient ? CLIENT_X : SERVER_X, y: START_Y + STEP_Y * 3 },
+      { x: TRANSMISSION_X, y: START_Y + STEP_Y * 3 },
+      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 3 },
+      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y * 2 },
+      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y + STEP_Y },
+      { x: fromClient ? SERVER_X : CLIENT_X, y: START_Y },
     ]
+  }, [props.packet.from])
 
-    return positions[props.stage]
-  }, [props.stage, props.packet.from])
+  // Animate through all stages
+  useEffect(() => {
+    let cancelled = false
+    async function animateStages() {
+      for (let s = stageRef.current; s < TOTAL_STAGES; s++) {
+        if (cancelled) break
+        setStage(s)
+        onStageChange?.(s)
+        await controls.start({
+          left: `${positions[s].x}%`,
+          top: positions[s].y,
+          transition: { duration: 0.5 / props.speed, ease: 'linear' },
+        })
+        stageRef.current = s + 1
+        if (!props.isPlaying) break
+      }
+      if (!cancelled && stageRef.current >= TOTAL_STAGES && onComplete) {
+        onComplete()
+      }
+    }
+    if (props.isPlaying) {
+      animateStages()
+    } else {
+      controls.stop()
+    }
+    return () => {
+      cancelled = true
+      controls.stop()
+    }
+  }, [
+    props.isPlaying,
+    props.speed,
+    positions,
+    controls,
+    onComplete,
+    onStageChange,
+  ])
+
+  const visibleHeaders = useMemo(() => {
+    const visibleHeaders: number[] = []
+    if (stage >= 1 && stage <= 7) visibleHeaders.push(1)
+    if (stage >= 2 && stage <= 6) visibleHeaders.push(2)
+    if (stage >= 3 && stage <= 5) visibleHeaders.push(3)
+    return visibleHeaders
+  }, [stage])
 
   const Icon = props.packet.type.icon
   const isClientToServer = props.packet.from === 'client'
-  const isOnSenderSide = props.stage < 4
+  const isOnSenderSide = stage < 4
   const alignRight = isClientToServer ? isOnSenderSide : !isOnSenderSide
-  const isOnTransmission = props.stage === 4
+  const isOnTransmission = stage === 4
 
   return (
-    <div
-      className="absolute transition-all duration-500"
-      style={{
-        left: `${currentPosition.x}%`,
-        top: currentPosition.y,
+    <motion.div
+      className="absolute"
+      animate={controls}
+      initial={{
+        left: `${positions[0].x}%`,
+        top: positions[0].y,
         transform: 'translate(-50%, -50%)',
         zIndex: 50,
       }}
+      style={{ transform: 'translate(-50%, -50%)', zIndex: 50 }}
     >
       <div className="relative">
         <div className="w-16 h-12 mt-2 bg-white border-2 border-black rounded flex items-start justify-center">
           <Icon className="mt-0.5 w-6 h-6 text-black" />
         </div>
-
         {visibleHeaders.map((layerIndex, i) => {
           const layer = TCP_IP_LAYERS[layerIndex]
-
           const verticalSpacing = 20
           const verticalOffset = i * verticalSpacing
-
           return (
             <div key={`header-${layerIndex}`}>
               <div
@@ -96,7 +139,6 @@ function EncapsulatedPacket(props: Props) {
             </div>
           )
         })}
-
         {/* Packet type label */}
         <div
           className="absolute bottom-1 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-center px-1 rounded"
@@ -105,7 +147,7 @@ function EncapsulatedPacket(props: Props) {
           {props.packet.type.name}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

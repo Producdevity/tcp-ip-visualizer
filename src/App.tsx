@@ -1,15 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import {
-  Info,
-  Laptop,
-  Pause,
-  Play,
-  RotateCcw,
-  Server,
-  SkipForward,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
+import { useState, useCallback, useMemo } from 'react'
 import { ANIMATION_STATES, TCP_IP_LAYERS } from './data'
 import getPacketForStep, { type PacketStep } from './utils/getPacketForStep'
 import getInfoText, { TOTAL_STEPS } from './utils/getInfoText'
@@ -17,8 +6,9 @@ import getLayoutInfoForStage from './utils/getLayerInfoForStage'
 import ProtocolOverview, { type Tab } from './components/ProtocolOverview'
 import EncapsulatedPacket from './components/EncapsulatedPacket'
 import ConnectionStatus from './components/ConnectionStatus'
-
-const BASE_DURATION = 3000
+import InfoPanel from './components/InfoPanel'
+import ControlsPanel from './components/ControlsPanel'
+import { Laptop, Server } from 'lucide-react'
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
@@ -26,145 +16,95 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [speed, setSpeed] = useState(0.5)
   const [currentStep, setCurrentStep] = useState(0)
-  const [packets, setPackets] = useState<PacketStep[]>([])
+  const [currentPacket, setCurrentPacket] = useState<PacketStep | null>(null)
   const [layerInfo, setLayerInfo] = useState('')
-  const [currentPacketStage, setCurrentPacketStage] = useState(0)
   const [infoText, setInfoText] = useState(
     'Click Play to start the TCP/IP visualization',
   )
+  const [pendingStep, setPendingStep] = useState(false)
 
-  const animationTimer = useRef<NodeJS.Timeout | null>(null)
-  // Clear any existing timers on unmount
-  useEffect(() => {
-    return () => {
-      if (!animationTimer.current) return
-      clearTimeout(animationTimer.current)
-    }
+  // Create a new packet for the current step
+  const createPacketForStep = useCallback((step: number) => {
+    const newPacket = getPacketForStep(step)
+    if (!newPacket) return null
+    setCurrentPacket(newPacket)
+    setLayerInfo(getLayoutInfoForStage(0, newPacket.from === 'client'))
+    return newPacket
   }, [])
 
-  // Start packet animation sequence
-  const startPacketAnimation = useCallback(
-    (packet: PacketStep) => {
-      const TOTAL_STAGES = 9
-      const STAGE_DURATION = BASE_DURATION / (speed * TOTAL_STAGES)
-
-      // Reset current stage
-      setCurrentPacketStage(0)
-
-      // Recursively advance through stages
-      const advanceStage = (stage: number) => {
-        if (stage >= TOTAL_STAGES) {
-          // Animation complete, remove packet
-          setPackets((prev) => prev.filter((p) => p.id !== packet.id))
-          return
-        }
-
-        setCurrentPacketStage(stage)
-
-        setLayerInfo(getLayoutInfoForStage(stage, packet.from === 'client'))
-
-        // Schedule next stage
-        setTimeout(() => {
-          advanceStage(stage + 1)
-        }, STAGE_DURATION)
-      }
-
-      advanceStage(0)
-    },
-    [speed],
-  )
-
-  const createPacketForStep = useCallback(
-    (step: number) => {
-      const newPacket = getPacketForStep(step)
-
-      if (!newPacket) return
-
-      setPackets((prev) => [...prev, newPacket])
-      setCurrentPacketStage(0)
-      startPacketAnimation(newPacket)
-    },
-    [startPacketAnimation],
-  )
-
-  // Handle animation steps
-  useEffect(() => {
-    if (!isPlaying) return
-
-    const stepDuration = BASE_DURATION / speed
-
-    const handleStep = () => {
-      if (currentStep >= TOTAL_STEPS) {
-        setIsPlaying(false)
-        setAnimationState(ANIMATION_STATES.COMPLETE)
-        return
-      }
-
-      if (currentStep < 3) {
-        setAnimationState(ANIMATION_STATES.HANDSHAKE)
-      } else if (currentStep < 10) {
-        setAnimationState(ANIMATION_STATES.DATA_TRANSFER)
-      } else {
-        setAnimationState(ANIMATION_STATES.TERMINATION)
-      }
-
-      createPacketForStep(currentStep)
-      setInfoText(getInfoText(currentStep))
-      setCurrentStep((prev) => prev + 1)
-    }
-
-    animationTimer.current = setTimeout(
-      handleStep,
-      currentPacketStage === 0 ? stepDuration / 2 : stepDuration,
-    )
-
-    return () => {
-      if (!animationTimer.current) return
-      clearTimeout(animationTimer.current)
-    }
-  }, [isPlaying, currentStep, speed, currentPacketStage, createPacketForStep])
-
-  const activePacketType = useMemo(
-    () => (packets.length > 0 ? packets[packets.length - 1].type.name : null),
-    [packets],
-  )
-
-  const togglePlay = () => {
-    if (!isPlaying) setActiveTab('packets')
-
-    if (currentStep >= TOTAL_STEPS) return resetAnimation()
-
-    setIsPlaying(!isPlaying)
-  }
-
-  const stepForward = () => {
-    if (currentStep < TOTAL_STEPS) {
+  // Start or continue animation
+  const startAnimation = useCallback(() => {
+    if (currentStep >= TOTAL_STEPS) {
       setIsPlaying(false)
+      setAnimationState(ANIMATION_STATES.COMPLETE)
+      setCurrentPacket(null)
+      return
+    }
+    if (currentStep < 3) {
+      setAnimationState(ANIMATION_STATES.HANDSHAKE)
+    } else if (currentStep < 10) {
+      setAnimationState(ANIMATION_STATES.DATA_TRANSFER)
+    } else {
+      setAnimationState(ANIMATION_STATES.TERMINATION)
+    }
+    setInfoText(getInfoText(currentStep))
+    createPacketForStep(currentStep)
+  }, [currentStep, createPacketForStep])
 
-      // Update animation state based on next step
-      if (currentStep < 3) {
-        setAnimationState(ANIMATION_STATES.HANDSHAKE)
-      } else if (currentStep < 10) {
-        setAnimationState(ANIMATION_STATES.DATA_TRANSFER)
-      } else {
-        setAnimationState(ANIMATION_STATES.TERMINATION)
+  const handleTogglePlay = () => {
+    if (!isPlaying) setActiveTab('packets')
+    if (currentStep >= TOTAL_STEPS) return handleResetAnimation()
+    setIsPlaying((prev) => {
+      const next = !prev
+      if (next && !currentPacket) {
+        startAnimation()
       }
+      return next
+    })
+  }
 
-      createPacketForStep(currentStep)
+  const handleStepForward = () => {
+    if (currentStep < TOTAL_STEPS && !isPlaying) {
+      setPendingStep(true)
       setInfoText(getInfoText(currentStep))
-      setCurrentStep((prev) => prev + 1)
+      createPacketForStep(currentStep)
     }
   }
 
-  const resetAnimation = () => {
+  const handleResetAnimation = () => {
     setIsPlaying(false)
     setCurrentStep(0)
-    setPackets([])
+    setCurrentPacket(null)
     setAnimationState(ANIMATION_STATES.IDLE)
     setInfoText('Click Play to start the TCP/IP visualization')
     setLayerInfo('')
-    setCurrentPacketStage(0)
+    setPendingStep(false)
   }
+
+  const handlePacketComplete = useCallback(() => {
+    setCurrentPacket(null)
+    if (isPlaying || pendingStep) {
+      setCurrentStep((prev) => prev + 1)
+      setPendingStep(false)
+    }
+  }, [isPlaying, pendingStep])
+
+  // When currentStep changes and playing, start next animation
+  // (or after handleStepForward)
+  useMemo(() => {
+    if (
+      (isPlaying || pendingStep) &&
+      !currentPacket &&
+      currentStep < TOTAL_STEPS
+    ) {
+      startAnimation()
+    }
+  }, [isPlaying, pendingStep, currentPacket, currentStep, startAnimation])
+
+  const activePacketType = useMemo(
+    () => (currentPacket ? currentPacket.type.name : null),
+    [currentPacket],
+  )
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-8">
@@ -190,7 +130,6 @@ function App() {
               <div className="flex flex-col items-center">
                 <Laptop className="w-16 h-16 text-primary" />
                 <span className="mt-2 font-medium">Client</span>
-
                 {/* Client TCP/IP Stack */}
                 <div className="mt-4 space-y-6">
                   {TCP_IP_LAYERS.map((layer) => (
@@ -207,11 +146,9 @@ function App() {
                   ))}
                 </div>
               </div>
-
               <div className="flex flex-col items-center">
                 <Server className="w-16 h-16 text-primary" />
                 <span className="mt-2 font-medium">Server</span>
-
                 {/* Server TCP/IP Stack */}
                 <div className="mt-4 space-y-6">
                   {TCP_IP_LAYERS.map((layer) => (
@@ -229,8 +166,6 @@ function App() {
                 </div>
               </div>
             </div>
-
-            {/* Physical Layer Connection */}
             <div className="absolute bottom-24 left-0 w-full flex justify-center">
               <div className="w-3/4 border-b-2 border-dashed border-gray-400 relative">
                 <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-sm text-gray-500 whitespace-nowrap">
@@ -238,91 +173,42 @@ function App() {
                 </div>
               </div>
             </div>
-
-            {/* Layer Info */}
             {layerInfo && (
               <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-background/80 backdrop-blur-sm p-2 rounded-lg border shadow-sm">
                 <p className="text-sm font-medium">{layerInfo}</p>
               </div>
             )}
-
-            {/* Packets */}
-            {packets.map((packet) => (
+            {currentPacket && (
               <EncapsulatedPacket
-                key={packet.id}
-                packet={packet}
-                stage={currentPacketStage}
+                key={currentPacket.id}
+                packet={currentPacket}
+                isPlaying={isPlaying || pendingStep}
+                speed={speed}
+                onStageChange={(stage) => {
+                  setLayerInfo(
+                    getLayoutInfoForStage(
+                      stage,
+                      currentPacket.from === 'client',
+                    ),
+                  )
+                }}
+                onComplete={handlePacketComplete}
               />
-            ))}
-
+            )}
             <ConnectionStatus animationState={animationState} />
           </div>
 
-          {/* Info Panel */}
-          <div className="bg-muted p-4 rounded-lg">
-            <div className="flex items-start space-x-2">
-              <Info className="w-5 h-5 mt-0.5 flex-shrink-0" />
-              <p className="text-sm">{infoText}</p>
-            </div>
-          </div>
+          <InfoPanel text={infoText} />
 
-          {/* Controls */}
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={togglePlay}
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? (
-                  <Pause className="h-4 w-4" />
-                ) : (
-                  <Play className="h-4 w-4" />
-                )}
-              </Button>
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={stepForward}
-                disabled={currentStep >= TOTAL_STEPS}
-                aria-label="Step Forward"
-              >
-                <SkipForward className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={resetAnimation}
-                aria-label="Reset"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
-
-            
-            {/* TODO: Fix speed change during animation */}
-            <div className="flex items-center space-x-4 flex-1">
-              <span className="text-sm">Speed:</span>
-              <Slider
-                value={[speed]}
-                min={0.1}
-                max={1}
-                step={0.1}
-                onValueChange={([newSpeed]) => setSpeed(newSpeed)}
-                className="w-full max-w-xs"
-              />
-              <span className="text-sm w-8">{speed}x</span>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <span className="text-sm whitespace-nowrap">
-                Step: {currentStep}/{TOTAL_STEPS}
-              </span>
-            </div>
-          </div>
+          <ControlsPanel
+            isPlaying={isPlaying}
+            currentStep={currentStep}
+            speed={speed}
+            onTogglePlay={handleTogglePlay}
+            onChangeSpeed={setSpeed}
+            onStepForward={handleStepForward}
+            onResetAnimation={handleResetAnimation}
+          />
         </div>
       </div>
     </main>
