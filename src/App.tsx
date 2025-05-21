@@ -23,7 +23,6 @@ function App() {
   )
   const [pendingStep, setPendingStep] = useState(false)
 
-  // Create a new packet for the current step
   const createPacketForStep = useCallback((step: number) => {
     const newPacket = getPacketForStep(step)
     if (!newPacket) return null
@@ -32,7 +31,6 @@ function App() {
     return newPacket
   }, [])
 
-  // Start or continue animation
   const startAnimation = useCallback(() => {
     if (currentStep >= TOTAL_STEPS) {
       setIsPlaying(false)
@@ -64,7 +62,10 @@ function App() {
   }
 
   const handleStepForward = () => {
-    if (currentStep < TOTAL_STEPS && !isPlaying) {
+    if (currentStep >= TOTAL_STEPS) return
+    if (currentPacket) {
+      handlePacketComplete() // Instantly finish the current animation and move to the next step
+    } else {
       setPendingStep(true)
       setInfoText(getInfoText(currentStep))
       createPacketForStep(currentStep)
@@ -83,9 +84,12 @@ function App() {
 
   const handlePacketComplete = useCallback(() => {
     setCurrentPacket(null)
-    if (isPlaying || pendingStep) {
+    setLayerInfo('')
+    if (pendingStep) {
       setCurrentStep((prev) => prev + 1)
       setPendingStep(false)
+    } else if (isPlaying) {
+      setCurrentStep((prev) => prev + 1)
     }
   }, [isPlaying, pendingStep])
 
