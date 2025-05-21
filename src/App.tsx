@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { Laptop, Server } from 'lucide-react'
 import { ANIMATION_STATES, TCP_IP_LAYERS } from './data'
 import getPacketForStep, { type PacketStep } from './utils/getPacketForStep'
 import getInfoText, { TOTAL_STEPS } from './utils/getInfoText'
@@ -8,7 +9,6 @@ import EncapsulatedPacket from './components/EncapsulatedPacket'
 import ConnectionStatus from './components/ConnectionStatus'
 import InfoPanel from './components/InfoPanel'
 import ControlsPanel from './components/ControlsPanel'
-import { Laptop, Server } from 'lucide-react'
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
@@ -91,7 +91,7 @@ function App() {
 
   // When currentStep changes and playing, start next animation
   // (or after handleStepForward)
-  useMemo(() => {
+  useEffect(() => {
     if (
       (isPlaying || pendingStep) &&
       !currentPacket &&
