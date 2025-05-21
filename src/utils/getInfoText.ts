@@ -15,9 +15,12 @@ const infoTextMap: Record<number, string | null> = {
   13: 'Step 14: Connection terminated',
 }
 
+const NO_PACKET_INFO_TEXT = 'Click Play to start the TCP/IP visualization'
 export const TOTAL_STEPS = Object.keys(infoTextMap).length
 
-function getInfoText(step: number) {
+function getInfoText(step: number | null) {
+  if (step === null) return NO_PACKET_INFO_TEXT
+
   const infoText = infoTextMap[step]
 
   return infoText

@@ -5,7 +5,9 @@ import getPacketForStep, { type PacketStep } from './utils/getPacketForStep'
 import getInfoText, { TOTAL_STEPS } from './utils/getInfoText'
 import getLayoutInfoForStage from './utils/getLayerInfoForStage'
 import ProtocolOverview, { type Tab } from './components/ProtocolOverview'
-import EncapsulatedPacket from './components/EncapsulatedPacket'
+import EncapsulatedPacket, {
+  DEFAULT_SPEED,
+} from './components/EncapsulatedPacket'
 import ConnectionStatus from './components/ConnectionStatus'
 import InfoPanel from './components/InfoPanel'
 import ControlsPanel from './components/ControlsPanel'
@@ -14,13 +16,11 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [animationState, setAnimationState] = useState(ANIMATION_STATES.IDLE)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [speed, setSpeed] = useState(0.5)
+  const [speed, setSpeed] = useState(DEFAULT_SPEED)
   const [currentStep, setCurrentStep] = useState(0)
   const [currentPacket, setCurrentPacket] = useState<PacketStep | null>(null)
   const [layerInfo, setLayerInfo] = useState('')
-  const [infoText, setInfoText] = useState(
-    'Click Play to start the TCP/IP visualization',
-  )
+  const [infoText, setInfoText] = useState(getInfoText(null))
   const [pendingStep, setPendingStep] = useState(false)
 
   const createPacketForStep = useCallback((step: number) => {
@@ -77,7 +77,7 @@ function App() {
     setCurrentStep(0)
     setCurrentPacket(null)
     setAnimationState(ANIMATION_STATES.IDLE)
-    setInfoText('Click Play to start the TCP/IP visualization')
+    setInfoText(getInfoText(null))
     setLayerInfo('')
     setPendingStep(false)
   }
@@ -93,8 +93,6 @@ function App() {
     }
   }, [isPlaying, pendingStep])
 
-  // When currentStep changes and playing, start next animation
-  // (or after handleStepForward)
   useEffect(() => {
     if (
       (isPlaying || pendingStep) &&
