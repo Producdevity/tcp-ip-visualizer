@@ -1,5 +1,5 @@
-import { TOTAL_STEPS } from '@/utils/getInfoText'
 import { Pause, Play, SkipForward, RotateCcw } from 'lucide-react'
+import { TOTAL_STEPS } from '@/utils/getInfoText'
 import { Slider } from './ui/slider'
 import { Button } from './ui/button'
 
@@ -14,6 +14,11 @@ interface Props {
 }
 
 function ControlsPanel(props: Props) {
+  const currentStepLabel =
+    props.isPlaying || props.currentStep !== 0
+      ? props.currentStep + 1
+      : props.currentStep
+
   return (
     <div className="flex flex-col sm:flex-row items-center gap-4">
       <div className="flex items-center space-x-2">
@@ -61,7 +66,7 @@ function ControlsPanel(props: Props) {
       </div>
       <div className="flex items-center space-x-2">
         <span className="text-sm whitespace-nowrap">
-          Step: {props.currentStep}/{TOTAL_STEPS}
+          Step: {currentStepLabel}/{TOTAL_STEPS}
         </span>
       </div>
     </div>
