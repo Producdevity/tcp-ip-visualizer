@@ -12,6 +12,7 @@ interface Props {
 }
 
 const TOTAL_STAGES = 9
+const BASE_DURATION = 0.5 // Base duration for each stage
 
 function EncapsulatedPacket(props: Props) {
   const { onComplete, onStageChange } = props
@@ -47,12 +48,15 @@ function EncapsulatedPacket(props: Props) {
       for (let s = stageRef.current; s < TOTAL_STAGES; s++) {
         if (cancelled) break
         setStage(s)
-        onStageChange?.(s)
         await controls.start({
           left: `${positions[s].x}%`,
           top: positions[s].y,
-          transition: { duration: 0.5 / props.speed, ease: 'linear' },
+          transition: {
+            duration: BASE_DURATION / props.speed,
+            ease: 'anticipate',
+          },
         })
+        onStageChange?.(s)
         stageRef.current = s + 1
         if (!props.isPlaying) break
       }
@@ -78,14 +82,6 @@ function EncapsulatedPacket(props: Props) {
     onStageChange,
   ])
 
-  const visibleHeaders = useMemo(() => {
-    const visibleHeaders: number[] = []
-    if (stage >= 1 && stage <= 7) visibleHeaders.push(1)
-    if (stage >= 2 && stage <= 6) visibleHeaders.push(2)
-    if (stage >= 3 && stage <= 5) visibleHeaders.push(3)
-    return visibleHeaders
-  }, [stage])
-
   const Icon = props.packet.type.icon
   const isClientToServer = props.packet.from === 'client'
   const isOnSenderSide = stage < 4
@@ -108,22 +104,29 @@ function EncapsulatedPacket(props: Props) {
         <div className="w-16 h-12 mt-2 bg-white border-2 border-black rounded flex items-start justify-center">
           <Icon className="mt-0.5 w-6 h-6 text-black" />
         </div>
-        {visibleHeaders.map((layerIndex, i) => {
+        {[1, 2, 3].map((layerIndex, i) => {
           const layer = TCP_IP_LAYERS[layerIndex]
           const verticalSpacing = 20
           const verticalOffset = i * verticalSpacing
+          let headerVisible = false
+          if (layerIndex === 1) headerVisible = stage >= 1 && stage <= 7 // Transport: stages 1-7
+          if (layerIndex === 2) headerVisible = stage >= 2 && stage <= 6 // Internet: stages 2-6
+          if (layerIndex === 3) headerVisible = stage >= 3 && stage <= 5 // Network Interface: stages 3-5
           return (
             <div key={`header-${layerIndex}`}>
-              <div
+              <motion.div
                 className="absolute inset-0 border-4 rounded"
                 style={{
                   borderColor: layer.color,
-                  transform: `scale(${1 + (visibleHeaders.length - i) * 0.12})`,
+                  transform: `scale(${1 + (3 - i) * 0.12})`,
                   zIndex: -layerIndex,
                 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: headerVisible ? 1 : 0 }}
+                transition={{ duration: 0.25, delay: headerVisible ? 0.5 : 0 }}
               />
               {!isOnTransmission && (
-                <div
+                <motion.div
                   className="absolute text-[8px] font-bold px-1 py-0.5 rounded whitespace-nowrap text-white text-center min-w-18"
                   style={{
                     top: `${verticalOffset}px`,
@@ -132,9 +135,15 @@ function EncapsulatedPacket(props: Props) {
                     transform: `translateX(${alignRight ? '16px' : '-16px'})`,
                     backgroundColor: layer.color,
                   }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: headerVisible ? 1 : 0 }}
+                  transition={{
+                    duration: 0.25,
+                    delay: headerVisible ? 0.5 : 0,
+                  }}
                 >
                   {layer.header}
-                </div>
+                </motion.div>
               )}
             </div>
           )
